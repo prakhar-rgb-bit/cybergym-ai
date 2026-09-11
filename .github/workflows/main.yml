@@ -1,0 +1,52 @@
+name: Build CyberGym APK
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download project ZIP
+        uses: actions/checkout@v4
+
+      - name: Extract project
+        run: |
+          unzip -q cybergym-ai.zip -d project
+          echo "Project contents:"
+          find project -maxdepth 2 -type f | head -50
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make Gradle executable
+        run: |
+          chmod +x project/*/gradlew 2>/dev/null || true
+          chmod +x project/gradlew 2>/dev/null || true
+
+      - name: Build APK
+        run: |
+          if [ -f project/gradlew ]; then
+            cd project
+            ./gradlew assembleDebug
+          else
+            cd project/cybergym-ai
+            ./gradlew assembleDebug
+          fi
+
+      - name: Find APK
+        run: |
+          find project -type f -name "*.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: CyberGym-APK
+          path: project/**/build/outputs/apk/**/*.apk
